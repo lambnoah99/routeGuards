@@ -38,6 +38,8 @@ isLoggedIn: Observable<boolean> = of(false);
 ```
 
 Then we add a function for the user to login. This code returns an Observable which emits the Value `true`, then pipes it to set the variable isLoggedIn also to true.
+
+`auth.service.ts`
 ```typescript
 login(): Observable<boolean> {
     return of(true).pipe(() => {
@@ -47,6 +49,8 @@ login(): Observable<boolean> {
 ```
 
 We also need a Function to log the user out. It also navigates the user back to the dashboard
+
+`auth.service.ts`
 ```typescript
 logout(): void {
     this.router.navigate(['/dashboard']);
@@ -60,6 +64,8 @@ Next we create an AuthGuard. You'll be asked which Interface to use. We're going
 ng generate guard auth
 ```
 this creates a file that should look like this
+
+`auth.guard.ts`
 ```TS
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, UrlTree } from '@angular/router';
@@ -80,8 +86,8 @@ Since the Guard implements the `CanActivate` class, it has to implement the `can
 This is the method that gets called when a user tries to navigate to a Route that is secured by the Guard. As you can see the method has several return types: `Observable<boolean | UrlTree`, `Observable<Promise<boolean | UrlTree>`, `boolean`, `UrlTree`. If the function returns a boolean/Observable of type Boolean/Promise of Type boolean, and the value is true, the User is allowed to navigate to the requested Page. If the value is false, the User is not allowed to navigate to the requested page and nothing happens. Additionally the method can return an UrlTree, which has the same effect as false, but also navigates the User to the URL, given by the UrlTree.
 Now we have to implement our logic for the Guard. We just have to get the Value from our Auth-Service and return it. We can also do additional things like in our example, Logging something to the console and creating an alert.
 
+`app-routing.module.ts`
 ```ts
-app-routing.module.ts
 canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean> {
@@ -98,6 +104,8 @@ canActivate(
 Note: We could also just use a simple boolean for the `isLoggedIn` variable, which would drastically reduce the code size in the AuthGuard. However using an Observable makes it asynchronous, which is a good foundation, for when you have a real Authentication Service which will always be asynchronous.
 
 To apply the Guard to a route we have to add it in our Routing Module. First we import it. After that we can just add the `canActivate` attribute to the path and assign our Guard to it.
+
+`app-routing.module.ts`
 ```ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -130,6 +138,9 @@ Create a new Component named login
 `ng generate component login`
 
 Add two methods for logging in and logging out in and in them call the AuthService's methods.
+<br>
+
+`login.component.ts`
 ```ts
 login():void {
     this.authService.login();
@@ -141,6 +152,9 @@ logOut(): void {
 ```
 
 Now we need two Buttons in the Template for the User. We want to display the Login button only when the user isn't logged in and vice versa, so we use `*ngIf` to do that.
+<br>
+
+`login.component.html`
 ```html
 <p>You're <span *ngIf="!(this.authService.isLoggedIn | async)">not</span> logged in</p>
 <div *ngIf="this.authService.isLoggedIn | async">
