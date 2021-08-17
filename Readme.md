@@ -132,12 +132,13 @@ Note that the `canActivate` attribute takes an Array as the argument. This means
 
 
 Now if you try to navigate to the hero-detail page, either within the application or by url, you should get an alert saying that your not authorized.
+## Login Component
 Next thing to do is to let the user sign in.
-Create a new Component named login 
+Create a new Component named login.
 
 `ng generate component login`
 
-Add two methods for logging in and logging out in and in them call the AuthService's methods.
+Add two methods for logging in and out, and in them call the AuthService's methods.
 <br>
 
 `login.component.ts`
@@ -151,7 +152,7 @@ logOut(): void {
 }
 ```
 
-Now we need two Buttons in the Template for the User. We want to display the Login button only when the user isn't logged in and vice versa, so we use `*ngIf` to do that.
+Now we need two Buttons in the Template for the User to login. We want to display the Login button only when the user isn't logged in and vice versa, so we use the `*ngIf` directive to do that.
 <br>
 
 `login.component.html`
@@ -164,7 +165,129 @@ Now we need two Buttons in the Template for the User. We want to display the Log
     <a (click)="login()">Login</a>
 </div>
 ```
-Note: we used the async pipe in the conditions. That way we don't have to subscribe to the `isLoggedIn` Observable, and the values get automatically updated.
+Note: we used the async pipe in the conditions. That way we don't have to subscribe to the `isLoggedIn` Observable, but the values still get automatically updated.
+
+## Final code review
+`auth.service.ts`
+```ts
+import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+
+import { Observable, of } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  isLoggedIn: Observable<boolean> = of(false);
+
+  constructor(private router: Router) { }
+
+  login(): Observable<boolean> {
+    return of(true).pipe(() => {
+      return this.isLoggedIn = of(true)
+    });
+  }
+
+  logout(): void {
+    this.router.navigate(['/dashboard']);
+    this.isLoggedIn = of(false);
+  }
+}
+```
+`auth.guard.ts`
+```ts
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { AuthService } from './auth.service';
+
+import { Observable, of } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate {
+
+  constructor(private authService: AuthService) { }
+
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean> {
+
+      let status = false;
+
+      this.authService.isLoggedIn.subscribe(val => {
+        val ? console.log("Authorized") : window.alert("Not Authorized");
+        return status = val;
+      });
+      return of(status);
+  }
+
+}
+```
+`app-routing.module.ts`
+```ts
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { HeroesComponent } from './heroes/heroes.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { HeroDetailComponent } from './hero-detail/hero-detail.component';
+import { AuthGuard } from './services/auth.guard';
+
+
+const routes: Routes = [
+  { path: 'heroes', component: HeroesComponent },
+  { path: 'detail/:id', component: HeroDetailComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard', component: DashboardComponent },
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: '**', redirectTo: '/dashboard', pathMatch: 'full' }
+]
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+```
+`login.component.ts`
+```ts
+import { Component, OnInit } from '@angular/core';
+import { AuthService } from '../services/auth.service';
+
+
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css']
+})
+export class LoginComponent implements OnInit {
+
+  constructor(public authService: AuthService) { }
+
+  ngOnInit(): void {
+  }
+
+  login():void {
+    this.authService.login();
+  }
+
+  logOut(): void {
+    this.authService.logout();
+  }
+
+}
+```
+`login.component.html`
+```html
+<p>You're <span *ngIf="!(this.authService.isLoggedIn | async)">not</span> logged in</p>
+<div *ngIf="this.authService.isLoggedIn | async">
+    <a (click)="logOut()">Logout</a>
+</div>
+<div *ngIf="!(this.authService.isLoggedIn | async)">
+    <a (click)="login()">Login</a>
+</div>
+```
 <br>
 <br>
 Source: https://angular.io/guide/router-tutorial-toh
