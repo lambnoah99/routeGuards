@@ -288,6 +288,11 @@ export class LoginComponent implements OnInit {
     <a (click)="login()">Login</a>
 </div>
 ```
+
+## Summary
+ - You've created a dummy authentication system.
+ - You've secured a route with a guard.
+ - You've created a way for the user to sign in.
 <br>
 <br>
 Source: https://angular.io/guide/router-tutorial-toh
