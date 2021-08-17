@@ -165,3 +165,6 @@ Now we need two Buttons in the Template for the User. We want to display the Log
 </div>
 ```
 Note: we used the async pipe in the conditions. That way we don't have to subscribe to the `isLoggedIn` Observable, and the values get automatically updated.
+<br>
+<br>
+Source: https://angular.io/guide/router-tutorial-toh
