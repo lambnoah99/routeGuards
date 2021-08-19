@@ -5,7 +5,7 @@ At the moment, any user can navigate anywhere in the application any time, but s
  - Maybe you should fetch some data before you display the target component.
  - You might want to save pending changes before leaving a component.
  - You might ask the user if it's OK to discard pending changes rather than save them.
-You add guards tot the route configuration to handle these scenarios.
+You add guards to the route configuration to handle these scenarios.
 
 A guard's return value controls the routers behavior:
  - If it returns `true`, the navigation process continues.
@@ -33,6 +33,7 @@ ng generate service auth
 
 <br>
 To track the current Authentication State we use an Observable of the type boolean and initialize it with `of(false)`, which means that it is false from default.
+
 ```
 isLoggedIn: Observable<boolean> = of(false);
 ```
@@ -41,10 +42,8 @@ Then we add a function for the user to login. This code returns an Observable wh
 
 `auth.service.ts`
 ```typescript
-login(): Observable<boolean> {
-    return of(true).pipe(() => {
-      return this.isLoggedIn = of(true)
-    });
+login(): void {
+    this.isLoggedIn = of(true);
   }
 ```
 
@@ -53,8 +52,8 @@ We also need a Function to log the user out. It also navigates the user back to 
 `auth.service.ts`
 ```typescript
 logout(): void {
-    this.router.navigate(['/dashboard']);
     this.isLoggedIn = of(false);
+    this.router.navigate(['/dashboard']);
   }
 ```
 
@@ -83,22 +82,19 @@ export class AuthGuard implements CanActivate {
 }
 ```
 Since the Guard implements the `CanActivate` class, it has to implement the `canActivate` method.
-This is the method that gets called when a user tries to navigate to a Route that is secured by the Guard. As you can see the method has several return types: `Observable<boolean | UrlTree`, `Observable<Promise<boolean | UrlTree>`, `boolean`, `UrlTree`. If the function returns a boolean/Observable of type Boolean/Promise of Type boolean, and the value is true, the User is allowed to navigate to the requested Page. If the value is false, the User is not allowed to navigate to the requested page and nothing happens. Additionally the method can return an UrlTree, which has the same effect as false, but also navigates the User to the URL, given by the UrlTree.
+This is the method that gets called when a user tries to navigate to a Route that is secured by the Guard. As you can see the method has several return types: `Observable<boolean | UrlTree`, `Promise<boolean | UrlTree>`, `boolean`, `UrlTree`. If the function returns a boolean/Observable of type Boolean/Promise of Type boolean, and the value is true, the User is allowed to navigate to the requested Page. If the value is false, the User is not allowed to navigate to the requested page and nothing happens. Additionally the method can return an UrlTree, which has the same effect as false, but also navigates the User to the URL, given by the UrlTree.
 Now we have to implement our logic for the Guard. We just have to get the Value from our Auth-Service and return it. We can also do additional things like in our example, Logging something to the console and creating an alert.
 
 `app-routing.module.ts`
 ```ts
+constructor(private authService: AuthService) { }
 canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean> {
 
-      let status = false;
-
-      this.authService.isLoggedIn.subscribe(val => {
-        val ? console.log("Authorized") : window.alert("Not Authorized");
-        return status = val;
-      });
-      return of(status);
+      return this.authService.isLoggedIn.pipe(
+        tap(x => x ? console.log('Authorized') : window.alert('Not Authorized'))
+      );
   }
 ```
 Note: We could also just use a simple boolean for the `isLoggedIn` variable, which would drastically reduce the code size in the AuthGuard. However using an Observable makes it asynchronous, which is a good foundation, for when you have a real Authentication Service which will always be asynchronous.
@@ -137,6 +133,10 @@ Next thing to do is to let the user sign in.
 Create a new Component named login.
 
 `ng generate component login`
+Insert the AuthService, it needs to be public, as we're going to use it in our template.
+```ts
+constructor(public authService: AuthService) { }
+```
 
 Add two methods for logging in and out, and in them call the AuthService's methods.
 <br>
@@ -164,6 +164,18 @@ Now we need two Buttons in the Template for the User to login. We want to displa
 <div *ngIf="!(this.authService.isLoggedIn | async)">
     <a (click)="login()">Login</a>
 </div>
+```
+And some styles for the buttons:
+
+`login.component.css`
+```css
+a {
+    background-color: #555;
+    color: #fff;
+    padding: 16px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
 ```
 Note: we used the async pipe in the conditions. That way we don't have to subscribe to the `isLoggedIn` Observable, but the values still get automatically updated.
 
@@ -199,10 +211,12 @@ export class AuthService {
 `auth.guard.ts`
 ```ts
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { AuthService } from './auth.service';
+import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot } from '@angular/router';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -215,13 +229,9 @@ export class AuthGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean> {
 
-      let status = false;
-
-      this.authService.isLoggedIn.subscribe(val => {
-        val ? console.log("Authorized") : window.alert("Not Authorized");
-        return status = val;
-      });
-      return of(status);
+      return this.authService.isLoggedIn.pipe(
+        tap(x => x ? console.log('Authorized') : window.alert('Not Authorized'))
+      );
   }
 
 }
@@ -280,13 +290,25 @@ export class LoginComponent implements OnInit {
 ```
 `login.component.html`
 ```html
-<p>You're <span *ngIf="!(this.authService.isLoggedIn | async)">not</span> logged in</p>
+<p>
+    You're <span *ngIf="!(this.authService.isLoggedIn | async)">not </span>logged in
+</p>
 <div *ngIf="this.authService.isLoggedIn | async">
     <a (click)="logOut()">Logout</a>
 </div>
 <div *ngIf="!(this.authService.isLoggedIn | async)">
     <a (click)="login()">Login</a>
 </div>
+```
+`login.component.css`
+```css
+a {
+    background-color: #555;
+    color: #fff;
+    padding: 16px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
 ```
 
 ## Summary
