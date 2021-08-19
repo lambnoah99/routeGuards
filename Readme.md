@@ -294,10 +294,10 @@ export class LoginComponent implements OnInit {
     You're <span *ngIf="!(this.authService.isLoggedIn | async)">not </span>logged in
 </p>
 <div *ngIf="this.authService.isLoggedIn | async">
-    <a (click)="logOut()">Logout</a>
+    <a (click)="logOut()" class="logout">Logout</a>
 </div>
 <div *ngIf="!(this.authService.isLoggedIn | async)">
-    <a (click)="login()">Login</a>
+    <a (click)="login()" class="login">Login</a>
 </div>
 ```
 `login.component.css`
@@ -308,6 +308,12 @@ a {
     padding: 16px;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+a.login {
+    background-color: green;
+}
+a.logout {
+    background-color: #d13626;
 }
 ```
 
